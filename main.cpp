@@ -6,6 +6,7 @@
 #include "LSM6DSLSensor.h"
 #include "lis3mdl_class.h"
 #include "VL53L0X.h"
+#include <cstdio>
 
 // objects for various sensors
 static DevI2C devI2c(PB_11,PB_10);
@@ -15,6 +16,9 @@ static LSM6DSLSensor acc_gyro(&devI2c,0xD4,D4,D5); // high address
 static LIS3MDL magnetometer(&devI2c, 0x3C);
 static DigitalOut shutdown_pin(PC_6);
 static VL53L0X range(&devI2c, &shutdown_pin, PC_7, 0x52);
+static UnbufferedSerial pc(USBTX, USBRX);
+
+char inp_char = 0;
 
 
 // functions to print sensor data
@@ -58,6 +62,13 @@ void print_distance(){
     }
 }
 
+void pc_interrupt(){
+        
+        pc.read(&inp_char, 1);   // set up interrupt that is triggered by keyboard input
+}
+
+
+
 /* Simple main function */
 int main() {
     uint8_t id;
@@ -81,7 +92,7 @@ int main() {
   
     printf("\033[2J\033[20A");
     printf ("\r\n--- Starting new run ---\r\n\r\n");
-
+;
     hum_temp.read_id(&id);
     printf("HTS221  humidity & temperature    = 0x%X\r\n", id);
 
@@ -99,8 +110,34 @@ int main() {
     print_gyro();
     print_distance();
     printf("\r\n");
-    
+
+    pc.attach(&pc_interrupt);
+
     while(1) {
+            switch(inp_char){
+                case 't':
+                    print_t_rh();
+                    inp_char = 0;
+                    break;
+                case 'm':
+                    print_mag();
+                    inp_char = 0;
+                    break;
+                case 'a':
+                    print_accel();
+                    inp_char = 0;
+                    break;
+                case 'g':
+                    print_gyro();
+                    inp_char = 0;
+                    break;
+                case 'd':
+                     print_distance();                   
+                    inp_char = 0;
+                    break;
+                default:
+                    break;
+            }
         wait_us(500000);
     }
 }
